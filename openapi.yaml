@@ -1,0 +1,167 @@
+openapi: 3.0.3
+info:
+  title: T-Bank Payments Hold API
+  version: "1.0.0"
+  description: API для управления блокировками исходящих платежей клиентов-юридических лиц.
+servers:
+  - url: http://localhost:8000
+paths:
+  /v1/clients/{clientId}/payment-holds:
+    post:
+      summary: Создать блокировку платежей клиента
+      operationId: createHold
+      parameters:
+        - in: path
+          name: clientId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type]
+              properties:
+                type:
+                  type: string
+                  enum: [FRAUD_SUSPECT, INCORRECT_BENEFICIARY_DETAILS]
+                comment: { type: string, maxLength: 2000 }
+                source: { type: string, maxLength: 255 }
+                expiresAt: { type: string, format: date-time, nullable: true }
+      responses:
+        "201":
+          description: Создано
+          headers:
+            Location: { schema: { type: string } }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Hold"
+        "409":
+          description: Дубликат по идемпотентному ключу
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string, maxLength: 128 }
+    get:
+      summary: Список блокировок клиента
+      operationId: listHolds
+      parameters:
+        - in: path
+          name: clientId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: status
+          schema: { type: string, enum: [ACTIVE, RELEASED, ALL], default: ACTIVE }
+      responses:
+        "200":
+          description: ОК
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Hold" }
+
+  /v1/clients/{clientId}/payment-holds:check:
+    get:
+      summary: Проверить, заблокирован ли клиент (агрегировано)
+      operationId: checkHold
+      parameters:
+        - in: path
+          name: clientId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: ОК
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  blocked: { type: boolean }
+                  kind:
+                    type: string
+                    enum: [NONE, FRAUD, NON_FRAUD]
+                  activeHolds:
+                    type: array
+                    items: { $ref: "#/components/schemas/Hold" }
+
+  /v1/clients/{clientId}/payment-holds/{holdId}:
+    get:
+      summary: Получить блокировку
+      operationId: getHold
+      parameters:
+        - in: path
+          name: clientId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: holdId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: ОК
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Hold" }
+        "404": { description: Не найдено }
+
+  /v1/clients/{clientId}/payment-holds/{holdId}:release:
+    post:
+      summary: Разблокировать (закрыть) блокировку
+      operationId: releaseHold
+      parameters:
+        - in: path
+          name: clientId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: path
+          name: holdId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string, maxLength: 1000 }
+                comment: { type: string, maxLength: 2000 }
+      responses:
+        "200":
+          description: Закрыто
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Hold" }
+        "409":
+          description: Уже закрыта
+        "404":
+          description: Не найдено
+
+components:
+  schemas:
+    Hold:
+      type: object
+      properties:
+        holdId: { type: string, format: uuid }
+        clientId: { type: string, format: uuid }
+        type: { type: string, enum: [FRAUD_SUSPECT, INCORRECT_BENEFICIARY_DETAILS] }
+        status: { type: string, enum: [ACTIVE, RELEASED, EXPIRED] }
+        comment: { type: string, nullable: true }
+        source: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        createdBy: { type: string }
+        expiresAt: { type: string, format: date-time, nullable: true }
+        releasedAt: { type: string, format: date-time, nullable: true }
+        releasedBy: { type: string, nullable: true }
+        releaseReason: { type: string, nullable: true }
+        idempotencyKey: { type: string }

@@ -1,0 +1,136 @@
+{
+  "info": {
+    "name": "T-Bank Payments Hold API (Local)",
+    "_postman_id": "7bb26f34-ba02-45e2-b2be-3a8f5230891a",
+    "description": "Коллекция для проверки эндпоинтов локально",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Hold (FRAUD)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idem_key}}"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/v1/clients/{{client_id}}/payment-holds",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "v1",
+            "clients",
+            "{{client_id}}",
+            "payment-holds"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"type\": \"FRAUD_SUSPECT\", \"comment\": \"AML alert 123\", \"source\": \"aml-engine\", \"expiresAt\": \"2030-12-01T10:00:00Z\"}"
+        }
+      }
+    },
+    {
+      "name": "Create Hold (NON_FRAUD)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idem_key}}"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/v1/clients/{{client_id}}/payment-holds",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "v1",
+            "clients",
+            "{{client_id}}",
+            "payment-holds"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"type\": \"INCORRECT_BENEFICIARY_DETAILS\", \"comment\": \"Fix details\", \"source\": \"ops\"}"
+        }
+      }
+    },
+    {
+      "name": "List Holds (ACTIVE)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/v1/clients/{{client_id}}/payment-holds?status=ACTIVE",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "v1",
+            "clients",
+            "{{client_id}}",
+            "payment-holds"
+          ],
+          "query": [
+            {
+              "key": "status",
+              "value": "ACTIVE"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Check Client",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/v1/clients/{{client_id}}/payment-holds:check",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "v1",
+            "clients",
+            "{{client_id}}",
+            "payment-holds:check"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "client_id",
+      "value": "7d2b2b7a-2c0c-4f7c-8a84-2f4a3f686e55"
+    },
+    {
+      "key": "idem_key",
+      "value": "38288e05-40ed-489f-9824-5ce22ce68441"
+    }
+  ]
+}
